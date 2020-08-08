@@ -1,78 +1,77 @@
+use gilrs::{Button, EventType, Gilrs};
+use gilrs::ev::Axis::LeftStickX;
+use gilrs_core::{EvCode};
+use gilrs::ev::Code;
+use url::Url;
+
+use std::net::TcpListener;
+use std::thread::spawn;
+
+use tungstenite::{accept_hdr, connect, Message};
+use tungstenite::handshake::server::{Request, Response};
+
 fn main() {
-    use gilrs::{Axis, Button, Event, Gilrs};
-    use uuid::Uuid;
+
+    let (mut socket, response) =
+        connect(Url::parse("ws://192.168.1.56:8080").unwrap()).expect("Can't connect");
+
+    println!("Connected to the server");
+    println!("Response HTTP code: {}", response.status());
+    println!("Response contains the following headers:");
+    for (ref header, _value) in response.headers() {
+        println!("* {}", header);
+    }
+
+    socket
+        .write_message(Message::Text("---gamepad_input connected---".into()))
+        .unwrap();
+    // loop {
+    //     let msg = socket.read_message().expect("Error reading message");
+    //     println!("Received: {}", msg);
+    // }
+    // socket.close(None);
+
 
     let mut gilrs = Gilrs::new().unwrap();
 
-    let mut active_gamepad = None;
-
     loop {
-        // Examine new events
-        while let Some(Event { id, event, time }) = gilrs.next_event() {
-            println!("{:?} New event from {}: {:?}", time, id, event);
-            active_gamepad = Some(id);
+        while let Some(ev) = gilrs.next_event() {
 
-        //     for (id, gamepad) in gilrs.gamepads() {
-        //         println!(
-        //             r#"Gamepad {id} ({name}):
-        //     Map name: {map_name:?}
-        //     Os name: {os_name}
-        //     UUID: {uuid}
-        //     Is connected: {is_connected}
-        //     Power info: {power_info:?}
-        //     Mapping source: {mapping_source:?}
-        //     Is ff supported: {ff}
-        //     Deadzone Left X: {dlx:?}
-        //     Deadzone Left Y: {dly:?}
-        //     Deadzone Right X: {drx:?}
-        //     Deadzone Right Y: {dry:?}
-        //     Deadzone Left Trigger: {dlt:?}
-        //     Deadzone Right Trigger: {drt:?}
-        //     Deadzone Left Trigger 2: {dlt2:?}
-        //     Deadzone Right Trigger 2: {drt2:?}
-        // "#,
-        //             id = id,
-        //             name = gamepad.name(),
-        //             map_name = gamepad.map_name(),
-        //             os_name = gamepad.os_name(),
-        //             uuid = Uuid::from_bytes(gamepad.uuid()).to_hyphenated(),
-        //             is_connected = gamepad.is_connected(),
-        //             power_info = gamepad.power_info(),
-        //             mapping_source = gamepad.mapping_source(),
-        //             ff = gamepad.is_ff_supported(),
-        //             dlx = gamepad
-        //                 .axis_code(Axis::LeftStickX)
-        //                 .and_then(|code| gamepad.deadzone(code)),
-        //             dly = gamepad
-        //                 .axis_code(Axis::LeftStickY)
-        //                 .and_then(|code| gamepad.deadzone(code)),
-        //             drx = gamepad
-        //                 .axis_code(Axis::RightStickX)
-        //                 .and_then(|code| gamepad.deadzone(code)),
-        //             dry = gamepad
-        //                 .axis_code(Axis::RightStickY)
-        //                 .and_then(|code| gamepad.deadzone(code)),
-        //             dlt = gamepad
-        //                 .button_code(Button::LeftTrigger)
-        //                 .and_then(|code| gamepad.deadzone(code)),
-        //             drt = gamepad
-        //                 .button_code(Button::RightTrigger)
-        //                 .and_then(|code| gamepad.deadzone(code)),
-        //             dlt2 = gamepad
-        //                 .button_code(Button::LeftTrigger2)
-        //                 .and_then(|code| gamepad.deadzone(code)),
-        //             drt2 = gamepad
-        //                 .button_code(Button::RightTrigger2)
-        //                 .and_then(|code| gamepad.deadzone(code)),
-        //         );
-        //     }
-        }
+            let info = gilrs.gamepad(ev.id);
 
-        // You can also use cached gamepad state
-        if let Some(gamepad) = active_gamepad.map(|id| gilrs.gamepad(id)) {
-            if gamepad.is_pressed(Button::South) {
-                println!("Button South is pressed (XBox - A, PS - X)");
+            match ev.event {
+                EventType::ButtonPressed(Button::South, _) => socket
+                    .write_message(Message::Text(format!("{:?}", ev.event).into()))
+                    .unwrap(),
+                EventType::ButtonPressed(Button::North, _) => socket
+                    .write_message(Message::Text(format!("{:?}", ev.event).into()))
+                    .unwrap(),
+                EventType::ButtonPressed(Button::West, _) => socket
+                    .write_message(Message::Text(format!("{:?}", ev.event).into()))
+                    .unwrap(),
+                EventType::ButtonPressed(Button::East, _) => socket
+                    .write_message(Message::Text(format!("{:?}", ev.event).into()))
+                    .unwrap(),
+                EventType::ButtonReleased(Button::South, _) => socket
+                    .write_message(Message::Text(format!("{:?}", ev.event).into()))
+                    .unwrap(),
+                EventType::ButtonReleased(Button::North, _) => socket
+                    .write_message(Message::Text(format!("{:?}", ev.event).into()))
+                    .unwrap(),
+                EventType::ButtonReleased(Button::West, _) => socket
+                    .write_message(Message::Text(format!("{:?}", ev.event).into()))
+                    .unwrap(),
+                EventType::ButtonReleased(Button::East, _) => socket
+                    .write_message(Message::Text(format!("{:?}", ev.event).into()))
+                    .unwrap(),
+                EventType::Connected => println!("Connected: {}", format!("{:?}", info.id())),
+                EventType::Disconnected => println!("Disconnected: {}", format!("{:?}", info.id())),
+                _ => (),
             }
+
+
         }
     }
+
+
 }
