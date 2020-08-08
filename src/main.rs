@@ -1,4 +1,4 @@
-use gilrs::{Button, EventType, Gilrs};
+use gilrs::{Button, EventType, Gilrs, Event};
 use gilrs::ev::Axis::LeftStickX;
 use gilrs_core::{EvCode};
 use gilrs::ev::Code;
@@ -7,8 +7,12 @@ use url::Url;
 use std::net::TcpListener;
 use std::thread::spawn;
 
-use tungstenite::{accept_hdr, connect, Message};
+use tungstenite::{accept_hdr, connect, Message, WebSocket};
 use tungstenite::handshake::server::{Request, Response};
+use std::thread;
+use std::time::Duration;
+use std::borrow::{BorrowMut, Borrow};
+use tungstenite::client::AutoStream;
 
 fn main() {
 
@@ -25,10 +29,7 @@ fn main() {
     socket
         .write_message(Message::Text("---gamepad_input connected---".into()))
         .unwrap();
-    // loop {
-    //     let msg = socket.read_message().expect("Error reading message");
-    //     println!("Received: {}", msg);
-    // }
+
     // socket.close(None);
 
 
@@ -40,30 +41,14 @@ fn main() {
             let info = gilrs.gamepad(ev.id);
 
             match ev.event {
-                EventType::ButtonPressed(Button::South, _) => socket
-                    .write_message(Message::Text(format!("{:?}", ev.event).into()))
-                    .unwrap(),
-                EventType::ButtonPressed(Button::North, _) => socket
-                    .write_message(Message::Text(format!("{:?}", ev.event).into()))
-                    .unwrap(),
-                EventType::ButtonPressed(Button::West, _) => socket
-                    .write_message(Message::Text(format!("{:?}", ev.event).into()))
-                    .unwrap(),
-                EventType::ButtonPressed(Button::East, _) => socket
-                    .write_message(Message::Text(format!("{:?}", ev.event).into()))
-                    .unwrap(),
-                EventType::ButtonReleased(Button::South, _) => socket
-                    .write_message(Message::Text(format!("{:?}", ev.event).into()))
-                    .unwrap(),
-                EventType::ButtonReleased(Button::North, _) => socket
-                    .write_message(Message::Text(format!("{:?}", ev.event).into()))
-                    .unwrap(),
-                EventType::ButtonReleased(Button::West, _) => socket
-                    .write_message(Message::Text(format!("{:?}", ev.event).into()))
-                    .unwrap(),
-                EventType::ButtonReleased(Button::East, _) => socket
-                    .write_message(Message::Text(format!("{:?}", ev.event).into()))
-                    .unwrap(),
+                EventType::ButtonPressed(Button::South, _) => send_message(ev.event, &mut socket),
+                EventType::ButtonPressed(Button::North, _) => send_message(ev.event, &mut socket),
+                EventType::ButtonPressed(Button::West, _) => send_message(ev.event, &mut socket),
+                EventType::ButtonPressed(Button::East, _) => send_message(ev.event, &mut socket),
+                EventType::ButtonReleased(Button::South, _) => send_message(ev.event, &mut socket),
+                EventType::ButtonReleased(Button::North, _) => send_message(ev.event, &mut socket),
+                EventType::ButtonReleased(Button::West, _) => send_message(ev.event, &mut socket),
+                EventType::ButtonReleased(Button::East, _) => send_message(ev.event, &mut socket),
                 EventType::Connected => println!("Connected: {}", format!("{:?}", info.id())),
                 EventType::Disconnected => println!("Disconnected: {}", format!("{:?}", info.id())),
                 _ => (),
@@ -73,5 +58,22 @@ fn main() {
         }
     }
 
+
+}
+
+fn send_message(ev: EventType, sock: &mut WebSocket<AutoStream>) {
+    sock
+        .write_message(Message::Text(format!("{:?}", ev).into()))
+        .unwrap();
+}
+
+fn start_message_listener(sock: &'static mut WebSocket<AutoStream>) {
+    thread::spawn(move || {
+        loop {
+            let msg = sock.read_message().expect("Error reading message");
+            println!("Received: {}", msg);
+            thread::sleep(Duration::from_millis(1));
+        }
+    });
 
 }
