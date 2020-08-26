@@ -33,15 +33,33 @@ fn main() {
 
             match ev.event {
                 EventType::ButtonPressed(Button::South, _) =>
-                    send_message(None, &mut socket, Option::from("ROTATE_DOWN")),
+                    send_message(None, &mut socket, Option::from("BEGIN_ROTATE_DOWN")),
+
                 EventType::ButtonPressed(Button::North, _) =>
-                    send_message(None, &mut socket, Option::from("ROTATE_UP")),
+                    send_message(None, &mut socket, Option::from("BEGIN_ROTATE_UP")),
+
                 EventType::ButtonPressed(Button::West, _) =>
-                    send_message(None, &mut socket, Option::from("ROTATE_RIGHT")),
+                    send_message(None, &mut socket, Option::from("BEGIN_ROTATE_RIGHT")),
+
                 EventType::ButtonPressed(Button::East, _) =>
-                    send_message(None, &mut socket, Option::from("ROTATE_LEFT")),
+                    send_message(None, &mut socket, Option::from("BEGIN_ROTATE_LEFT")),
+
+                EventType::ButtonReleased(Button::South, _) =>
+                    send_message(None, &mut socket, Option::from("END_ROTATE_DOWN")),
+
+                EventType::ButtonReleased(Button::North, _) =>
+                    send_message(None, &mut socket, Option::from("END_ROTATE_UP")),
+
+                EventType::ButtonReleased(Button::West, _) =>
+                    send_message(None, &mut socket, Option::from("END_ROTATE_RIGHT")),
+                    
+                EventType::ButtonReleased(Button::East, _) =>
+                    send_message(None, &mut socket, Option::from("END_ROTATE_LEFT")),
+
                 EventType::Connected => println!("Connected: {}", format!("{:?}", info.id())),
+
                 EventType::Disconnected => println!("Disconnected: {}", format!("{:?}", info.id())),
+
                 _ => (),
             }
 
